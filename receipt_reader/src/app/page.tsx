@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
+import {InputFile}  from "@/components/ui/meta-components/input-file";
 
 interface Receipt {
   m:string
@@ -89,7 +90,7 @@ export default function Home() {
       <MyButtonComponent onClick={handleButtonClick} />
       {/* <MyButtonComponent onClick={openai} /> */}
       <Button onClick={downloadFunction}>Download</Button>
-    
+    <InputFile/>
     </main>
   );
 }
