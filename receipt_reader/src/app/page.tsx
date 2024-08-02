@@ -14,23 +14,21 @@ type ContentType = 'text/plain' | 'text/html' | 'text/csv' | 'application/json' 
 
 
 // OCR
-let receipt = async ():Promise<string> => {
+let receipt = async (file: File): Promise<string> => {
   const { createWorker } = require('tesseract.js');
 
-const worker = await createWorker('eng', 1, {
-  logger: (m:Receipt) => console.log(m.m), // Add logger here
-});
+  const worker = await createWorker('eng', 1, {
+    logger: (m: any) => console.log(m),
+  });
 
- try {
-  const { data: { text } } = await worker.recognize('https://miro.medium.com/v2/resize:fit:640/format:webp/1*MLRlL9W69PMWAcTF-rV36Q.jpeg');
-  console.log(text);
-  return text;
-} finally {
-  await worker.terminate();
+  try {
+    const { data: { text } } = await worker.recognize(file);
+    console.log(text);
+    return text;
+  } finally {
+    await worker.terminate();
   }
 };
-
-
   
 // OpenAI
 const openai = async (text:string) => {
@@ -54,19 +52,22 @@ const MyButtonComponent: React.FC<MyButtonComponentProps> = ({ onClick }) => (
 );
 
 // Pass OCR to OpenAI
-const handleProcess = async (setDownloadFunction: (fn: () => void) => void) => {
+const handleProcess = async (file: File | null, setDownloadFunction: (fn: () => void) => void) => {
+  if (!file) {
+    console.error('No file selected');
+    return;
+  }
+
   try {
-    const receiptText = await receipt();
+    const receiptText = await receipt(file);
     const openaiResponse = await openai(receiptText);
-    const downloadFunction = () => downloadFile(openaiResponse.message.content, 'test.csv', 'text/csv');
+    const downloadFunction = () => downloadFile(openaiResponse.message.content, `${__filename}.csv`, 'text/csv');
     setDownloadFunction(() => downloadFunction);
-    // Handle the OpenAI response as needed
-    console.log("response",openaiResponse.message.content);
+    console.log("response", openaiResponse.message.content);
   } catch (error) {
     console.error('Error processing receipt:', error);
   }
 };
-
 //Download
 const  downloadFile = async (content:string, filename:string, contentType:ContentType) => {
   const blob = new Blob([content], { type: contentType });
@@ -81,16 +82,27 @@ const  downloadFile = async (content:string, filename:string, contentType:Conten
 
 // Usage
 export default function Home() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [downloadFunction, setDownloadFunction] = useState<() => void>(() => {});
-  const handleButtonClick = () => {
-    handleProcess(setDownloadFunction);
+  
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
   };
+
+  const handleButtonClick = () => {
+    handleProcess(selectedFile, setDownloadFunction);
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <MyButtonComponent onClick={handleButtonClick} />
-      {/* <MyButtonComponent onClick={openai} /> */}
       <Button onClick={downloadFunction}>Download</Button>
-    <InputFile/>
+      <InputFile onFileSelect={handleFileSelect}/>
+      {selectedFile && (
+        <div>
+          <p>Selected file: {selectedFile.name}</p>
+        </div>
+      )}
     </main>
   );
 }
