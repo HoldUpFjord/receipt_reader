@@ -144,7 +144,6 @@ export default function Home() {
         )}
         </section>
       <section/>
-       <DataTable columns={columns} data={data}/>
       <MyButtonComponent onClick={handleButtonClick} />
       <Button onClick={downloadFunction}>Download</Button>
       <Button onClick={handleParseCSV}>CsvToString</Button>
